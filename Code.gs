@@ -199,6 +199,44 @@ function getPdfPageCount(fileId) {
 /**
  * 正式送印發信：組裝主旨、掛載附件、發送 Gmail、記錄到 Sheet
  */
+
+function buildPrintSubject(form) {
+  const {
+    materialName,
+    isReprint,
+    colorType,
+    studentCopies,
+    teacherCopies,
+    dueDateFormatted,
+    coverType,
+    specialTag
+  } = form;
+
+  let subjectParts = [];
+  if (isReprint) subjectParts.push("[加印]");
+  subjectParts.push(`[${materialName}]`);
+  subjectParts.push(`[${colorType}]`);
+
+  let copyStr = "";
+  if (studentCopies > 0 && teacherCopies > 0) {
+    copyStr = `學${studentCopies}/教${teacherCopies}`;
+  } else if (studentCopies > 0) {
+    copyStr = `學${studentCopies}`;
+  } else if (teacherCopies > 0) {
+    copyStr = `教${teacherCopies}`;
+  } else {
+    copyStr = `學1`;
+  }
+  subjectParts.push(`[${copyStr}]`);
+  subjectParts.push(`[${dueDateFormatted}]`);
+  if (specialTag && specialTag.trim() !== "") {
+    subjectParts.push(`[${specialTag.trim()}]`);
+  }
+  subjectParts.push(`[${coverType || "公版封面"}]`);
+
+  return subjectParts.join("");
+}
+
 function sendPrintEmail(form) {
   try {
     const {
@@ -221,33 +259,7 @@ function sendPrintEmail(form) {
     } = form;
 
     // 1. 組裝標準化主旨
-    // 範例：[加印][高一下數學講義B2][黑白][學4][07/09(四)][公版封面]
-    // 範例：[國三上社會講義][黑白][學21][08/27(四)][公版封面]
-    // 範例：[高二物理講義][黑白][學8][08/20(四)][要分隔(藍色)][公版封面]
-    let subjectParts = [];
-    if (isReprint) subjectParts.push("[加印]");
-    subjectParts.push(`[${materialName}]`);
-    subjectParts.push(`[${colorType}]`);
-
-    // 本數表示：學X / 教Y 或 學X
-    let copyStr = "";
-    if (studentCopies > 0 && teacherCopies > 0) {
-      copyStr = `學${studentCopies}/教${teacherCopies}`;
-    } else if (studentCopies > 0) {
-      copyStr = `學${studentCopies}`;
-    } else if (teacherCopies > 0) {
-      copyStr = `教${teacherCopies}`;
-    } else {
-      copyStr = `學1`;
-    }
-    subjectParts.push(`[${copyStr}]`);
-    subjectParts.push(`[${dueDateFormatted}]`);
-    if (specialTag && specialTag.trim() !== "") {
-      subjectParts.push(`[${specialTag.trim()}]`);
-    }
-    subjectParts.push(`[${coverType || "公版封面"}]`);
-
-    const fullSubject = subjectParts.join("");
+    const fullSubject = buildPrintSubject(form);
 
     // 2. 獲取附件 (優先支援本機同步資料夾之附件，亦相容 Drive 檔案)
     const attachments = [];
