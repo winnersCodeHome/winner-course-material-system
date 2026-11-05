@@ -1165,3 +1165,87 @@ function saveMaterialDistributionRoster(materialName, rosterList) {
   }
 }
 
+/**
+ * 載入全域設定
+ */
+function loadSettings() {
+  const { ss } = getOrCreateDb();
+  let sheet = ss.getSheetByName(CONFIG.SHEET_NAME_SETTINGS);
+
+  const defaultSettings = {
+    vendorName: '泗商影印社',
+    vendorEmail: 'winners.print@gmail.com',
+    driveFolderId: '',
+    defaultBwPrice: 0.38,
+    defaultColorPrice: 0.9,
+    defaultBindingCost: 20
+  };
+
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEET_NAME_SETTINGS);
+    const headers = ['vendorName', 'vendorEmail', 'driveFolderId', 'defaultBwPrice', 'defaultColorPrice', 'defaultBindingCost'];
+    const values = [
+      defaultSettings.vendorName,
+      defaultSettings.vendorEmail,
+      defaultSettings.driveFolderId,
+      defaultSettings.defaultBwPrice,
+      defaultSettings.defaultColorPrice,
+      defaultSettings.defaultBindingCost
+    ];
+    sheet.appendRow(headers);
+    sheet.appendRow(values);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, 6).setBackground("#1e293b").setFontColor("#ffffff").setFontWeight("bold");
+    return defaultSettings;
+  }
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) {
+    const values = [
+      defaultSettings.vendorName,
+      defaultSettings.vendorEmail,
+      defaultSettings.driveFolderId,
+      defaultSettings.defaultBwPrice,
+      defaultSettings.defaultColorPrice,
+      defaultSettings.defaultBindingCost
+    ];
+    sheet.appendRow(values);
+    return defaultSettings;
+  }
+
+  const row = data[1];
+  return {
+    vendorName: String(row[0] || ''),
+    vendorEmail: String(row[1] || ''),
+    driveFolderId: String(row[2] || ''),
+    defaultBwPrice: row[3] !== '' && row[3] != null ? Number(row[3]) : 0.38,
+    defaultColorPrice: row[4] !== '' && row[4] != null ? Number(row[4]) : 0.9,
+    defaultBindingCost: row[5] !== '' && row[5] != null ? Number(row[5]) : 20
+  };
+}
+
+/**
+ * 儲存全域設定
+ */
+function saveSettings(settingsObj) {
+  const { ss } = getOrCreateDb();
+  let sheet = ss.getSheetByName(CONFIG.SHEET_NAME_SETTINGS);
+
+  if (!sheet) {
+    loadSettings();
+    sheet = ss.getSheetByName(CONFIG.SHEET_NAME_SETTINGS);
+  }
+
+  const values = [
+    settingsObj.vendorName || '',
+    settingsObj.vendorEmail || '',
+    settingsObj.driveFolderId || '',
+    Number(settingsObj.defaultBwPrice) || 0,
+    Number(settingsObj.defaultColorPrice) || 0,
+    Number(settingsObj.defaultBindingCost) || 0
+  ];
+
+  // Update row 2
+  sheet.getRange(2, 1, 1, 6).setValues([values]);
+  return { success: true };
+}
