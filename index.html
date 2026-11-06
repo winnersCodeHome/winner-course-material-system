@@ -2188,8 +2188,37 @@
           }
         };
 
+        const loadSettings = () => {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                if (res) {
+                  settings.value = { ...settings.value, ...res };
+                }
+              })
+              .withFailureHandler((err) => {
+                triggerToast('設定讀取失敗', err.message || '無法從伺服器讀取設定');
+              })
+              .loadSettings();
+          } else {
+            // Local simulation mode, do nothing as defaults are already set in settings.value
+          }
+        };
+
         const saveSettings = () => {
-          triggerToast('設定已儲存', '通訊錄與費率參數已更新！');
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                triggerToast('設定已儲存', '通訊錄與費率參數已更新！');
+              })
+              .withFailureHandler((err) => {
+                triggerToast('設定儲存失敗', err.message || '無法儲存設定至伺服器');
+              })
+              .saveSettings(JSON.parse(JSON.stringify(settings.value)));
+          } else {
+            // Local simulation mode
+            triggerToast('設定已儲存 (本機模擬)', '通訊錄與費率參數已更新！');
+          }
         };
 
         const loadOrders = (silent = false) => {
@@ -2223,6 +2252,7 @@
 
         onMounted(() => {
           handleDateChange();
+          loadSettings();
           loadOrders();
           loadCleanupList();
           updateCleanupBadge();
